@@ -3,7 +3,9 @@ import 'dart:ui';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:nicetutu/Picture.dart';
+
+import 'Picture.dart';
+import 'Category.dart';
 
 void main() => runApp(const MyApp());
 
@@ -25,7 +27,6 @@ class MyApp extends StatelessWidget {
 }
 
 class MyCustomScrollBehavior extends MaterialScrollBehavior {
-// Override behavior methods and getters like dragDevices
   @override
   Set<PointerDeviceKind> get dragDevices => {
         PointerDeviceKind.touch,
@@ -41,9 +42,70 @@ class HomePageWidget extends StatefulWidget {
 }
 
 class _HomePageWidgetState extends State<HomePageWidget> {
-  List<Vertical> list = [];
-  List<Widget> widgets = [];
+  List<CategoryX> categories = [];
+  List<Widget> gridViews = [];
+
+  @override
+  void initState() {
+    super.initState();
+    getCategory();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.white,
+      child: PageView(
+        onPageChanged: (int index) {
+          print('$index');
+        },
+        children: gridViews,
+      ),
+    );
+  }
+
+  void getCategory() async {
+    String path = "http://service.picasso.adesk.com/v1/vertical/category";
+    var map = <String, dynamic>{};
+    map["adult"] = false;
+    map["first"] = 1;
+    Dio dio = Dio();
+    var response = await dio.get(path, queryParameters: map);
+    Map<String, dynamic> json = response.data;
+    Category category = Category.fromJson(json);
+    if (category.res != null && category.res?.category != null) {
+      setState(() {
+        categories.clear();
+        categories.addAll(category.res!.category!);
+      });
+      buildGridView();
+    }
+  }
+
+  void buildGridView() {
+    List<Widget> g = [];
+    for (var category in categories) {
+      g.add(MyGridViewWidget(category: category.id.toString()));
+    }
+    setState(() {
+      gridViews = g;
+    });
+  }
+}
+
+class MyGridViewWidget extends StatefulWidget {
+  const MyGridViewWidget({Key? key, required this.category}) : super(key: key);
+
+  final String? category;
+
+  @override
+  State<MyGridViewWidget> createState() => _MyGridViewWidgetState();
+}
+
+class _MyGridViewWidgetState extends State<MyGridViewWidget> {
   ScrollController scrollController = ScrollController();
+  List<Vertical> pics = [];
+  List<Widget> widgets = [];
   int page = 1;
   bool isLoading = false;
 
@@ -65,19 +127,18 @@ class _HomePageWidgetState extends State<HomePageWidget> {
     return Container(
       color: Colors.white,
       child: RefreshIndicator(
-        onRefresh: onRefresh,
-        child: GridView(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 1,
-            mainAxisSpacing: 10,
-            crossAxisSpacing: 10,
-            childAspectRatio: .7,
-          ),
-          controller: scrollController,
-          physics: const BouncingScrollPhysics(),
-          children: widgets,
-        ),
-      ),
+          onRefresh: onRefresh,
+          child: GridView(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              mainAxisSpacing: 10,
+              crossAxisSpacing: 10,
+              childAspectRatio: .6,
+            ),
+            controller: scrollController,
+            physics: const BouncingScrollPhysics(),
+            children: widgets,
+          )),
     );
   }
 
@@ -106,15 +167,41 @@ class _HomePageWidgetState extends State<HomePageWidget> {
     }
   }
 
+  void getRequest() async {
+    int random = Random.secure().nextInt(1000);
+    print('random: $random');
+    var dio = Dio();
+    String path =
+        "http://service.picasso.adesk.com/v1/vertical/category/${widget.category}/vertical";
+    var map = <String, dynamic>{};
+    map["limit"] = 30;
+    map["skip"] = random;
+    map["adult"] = false;
+    map["first"] = 1;
+    map["order"] = "new";
+    var response = await dio.get(path, queryParameters: map);
+    Map<String, dynamic> json = response.data;
+    Picture picture = Picture.fromJson(json);
+    if (picture.res != null && picture.res?.vertical != null) {
+      setState(() {
+        if (page == 1) {
+          pics.clear();
+        }
+        pics.addAll(picture.res!.vertical!);
+      });
+      buildWidget();
+    } else {}
+  }
+
   void buildWidget() {
     List<Widget> w = [];
     w.clear();
-    for (var pic in list) {
+    for (var pic in pics) {
       w.add(Material(
         child: Ink(
           child: InkWell(
             onTap: () {
-              // Navigator.of(context).pushNamed("pic");
+              Navigator.of(context).pushNamed("pic", arguments: pic.img);
             },
             child: Container(
               alignment: Alignment.center,
@@ -131,32 +218,6 @@ class _HomePageWidgetState extends State<HomePageWidget> {
       widgets = w;
     });
   }
-
-  void getRequest() async {
-    int random = Random.secure().nextInt(1000);
-    print('random: $random');
-    var dio = Dio();
-    const path =
-        "http://service.picasso.adesk.com/v1/vertical/category/4e4d610cdf714d2966000003/vertical";
-    var map = <String, dynamic>{};
-    map["limit"] = 30;
-    map["skip"] = random;
-    map["adult"] = false;
-    map["first"] = 1;
-    map["order"] = "new";
-    var response = await dio.get(path, queryParameters: map);
-    Map<String, dynamic> json = response.data;
-    Picture picture = Picture.fromJson(json);
-    if (picture.res != null && picture.res?.vertical != null) {
-      setState(() {
-        if (page == 1) {
-          list.clear();
-        }
-        list.addAll(picture.res!.vertical!);
-      });
-      buildWidget();
-    } else {}
-  }
 }
 
 class PicPageWidget extends StatefulWidget {
@@ -167,15 +228,26 @@ class PicPageWidget extends StatefulWidget {
 }
 
 class _PicPageWidgetState extends State<PicPageWidget> {
-  String path = "";
-
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      flex: 1,
-      child: Container(
-        color: Colors.yellow,
-      ),
-    );
+    String? path = ModalRoute.of(context)?.settings.arguments.toString();
+    if (path != null) {
+      return Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: NetworkImage(path),
+            fit: BoxFit.cover,
+          ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: MaterialButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+          },
+        ),
+      );
+    } else {
+      return Container();
+    }
   }
 }
