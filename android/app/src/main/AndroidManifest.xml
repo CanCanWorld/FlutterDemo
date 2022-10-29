@@ -2,7 +2,7 @@
     package="com.example.nicetutu">
     <uses-permission android:name="android.permission.INTERNET"/>
    <application
-        android:label="nicetutu"
+        android:label="不可以涩涩"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

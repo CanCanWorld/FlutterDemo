@@ -131,8 +131,8 @@ class _MyGridViewWidgetState extends State<MyGridViewWidget> {
           child: GridView(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              mainAxisSpacing: 10,
-              crossAxisSpacing: 10,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
               childAspectRatio: .6,
             ),
             controller: scrollController,
@@ -198,20 +198,36 @@ class _MyGridViewWidgetState extends State<MyGridViewWidget> {
     w.clear();
     for (var pic in pics) {
       w.add(Material(
-        child: Ink(
-          child: InkWell(
-            onTap: () {
+        child: Container(
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: NetworkImage(pic.img.toString()),
+              fit: BoxFit.cover,
+            ),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: MaterialButton(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            onPressed: () {
               Navigator.of(context).pushNamed("pic", arguments: pic.img);
             },
-            child: Container(
-              alignment: Alignment.center,
-              child: Ink.image(
-                image: NetworkImage(pic.img.toString()),
-                fit: BoxFit.cover,
-              ),
-            ),
           ),
         ),
+        // Ink(
+        //   child: InkWell(
+        //     onTap: () {
+        //       Navigator.of(context).pushNamed("pic", arguments: pic.img);
+        //     },
+        //     child: Container(
+        //       alignment: Alignment.center,
+        //       child: Ink.image(
+        //         image: NetworkImage(pic.img.toString()),
+        //         fit: BoxFit.cover,
+        //       ),
+        //     ),
+        //   ),
+        // ),
       ));
     }
     setState(() {
@@ -232,18 +248,28 @@ class _PicPageWidgetState extends State<PicPageWidget> {
   Widget build(BuildContext context) {
     String? path = ModalRoute.of(context)?.settings.arguments.toString();
     if (path != null) {
-      return Container(
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: NetworkImage(path),
-            fit: BoxFit.cover,
+      return Scaffold(
+        body: Container(
+          decoration: BoxDecoration(
+            image: DecorationImage(
+              image: NetworkImage(path),
+              fit: BoxFit.cover,
+            ),
           ),
-          borderRadius: BorderRadius.circular(20),
+          child: MaterialButton(
+            minWidth: double.infinity,
+            height: double.infinity,
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            onLongPress: () {
+
+            },
+          ),
         ),
-        child: MaterialButton(
-          onPressed: () {
-            Navigator.of(context).pop();
-          },
+        endDrawer: MaterialButton(
+          onPressed: (){},
+          color: Colors.green,
         ),
       );
     } else {
